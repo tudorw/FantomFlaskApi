@@ -1,3 +1,14 @@
+# python my_script.py deploy <private_key>
+# python my_script.py read <contract_address>
+# python my_script.py write <contract_address> <private_key> <function_args>
+# python my_script.py events <contract_address> <event_name> --from_block <from_block> --to_block <to_block>
+# python my_script.py send_raw_transaction <private_key> <raw_transaction>
+#
+# untested, use at your own risk!
+
+
+
+
 import click
 from flask import Flask, request, jsonify
 from web3 import Web3

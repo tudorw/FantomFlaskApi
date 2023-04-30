@@ -6,9 +6,6 @@
 #
 # untested, use at your own risk!
 
-
-
-
 import click
 from flask import Flask, request, jsonify
 from web3 import Web3
@@ -45,7 +42,24 @@ def deploy_route():
 @click.argument("private_key")
 def deploy(private_key):
     try:
-        ...
+            private_key = request.json["private_key"]
+
+    # Deploy the contract
+    account = Account.from_key(private_key)
+    contract = w3.eth.contract(abi=abi, bytecode=bytecode)
+    nonce = w3.eth.getTransactionCount(account.address)
+    txn = contract.constructor().buildTransaction({
+        'from': account.address,
+        'gas': 1500000,
+        'gasPrice': w3.eth.gasPrice,
+        'nonce': nonce,
+    })
+
+    signed_txn = account.sign_transaction(txn)
+    txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+    txn_receipt = w3.eth.waitForTransactionReceipt(txn_hash)
+
+    return jsonify({'contract_address': txn_receipt['contractAddress']})
     except (ValidationError, TimeExhausted) as e:
         return jsonify({"error": str(e)}), 400
 
@@ -61,7 +75,10 @@ def read_data_route():
 @click.argument("contract_address")
 def read_data(contract_address):
     try:
-        ...
+          contract_address = request.args.get("contract_address")
+    	contract = get_contract_instance(contract_address)
+	result = contract.functions.myFunction().call()
+    	return jsonify({"data": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -79,7 +96,27 @@ def write_data_route():
 @click.argument("function_args", nargs=-1)
 def write_data(contract_address, private_key, function_args):
     try:
-        ...
+          contract_address = request.json["contract_address"]
+    private_key = request.json["private_key"]
+    # Replace with the appropriate function arguments
+    function_args = request.json["function_args"]
+
+    account = Account.from_key(private_key)
+    contract = get_contract_instance(contract_address)
+    nonce = w3.eth.getTransactionCount(account.address)
+
+    txn = contract.functions.myFunction(*function_args).buildTransaction({
+        'from': account.address,
+        'gas': 1500000,
+        'gasPrice': w3.eth.gasPrice,
+        'nonce': nonce,
+    })
+
+    signed_txn = account.sign_transaction(txn)
+    txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+    txn_receipt = w3.eth.waitForTransactionReceipt(txn_hash)
+
+    return jsonify({"transaction_hash": txn_hash.hex()})
     except (ValidationError, TimeExhausted) as e:
         return jsonify({"error": str(e)}), 400
 
@@ -99,7 +136,19 @@ def get_events_route():
 @click.option("--to_block", default="latest")
 def get_events(contract_address, event_name, from_block, to_block):
     try:
-        ...
+         contract_address = request.args.get("contract_address")
+    event_name = request.args.get("event_name")
+    from_block = int(request.args.get("from_block", 0))
+    to_block = request.args.get("to_block", "latest")
+
+    contract = get_contract_instance(contract_address)
+    event_filter = contract.events[event_name].createFilter(
+        fromBlock=from_block,
+        toBlock=to_block,
+    )
+    events = event_filter.get_all_entries()
+
+    return jsonify({"events": events})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -115,12 +164,19 @@ def send_raw_transaction_route():
 @click.argument("raw_transaction")
 def send_raw_transaction(private_key, raw_transaction):
     try:
-        ...
+        private_key = request.json["private_key"]
+        raw_transaction = request.json["raw_transaction"]
+
+        account = Account.from_key(private_key)
+        signed_txn = account.sign_transaction(raw_transaction)
+        txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        txn_receipt = w3.eth.waitForTransactionReceipt(txn_hash)
+
+        return jsonify({"transaction_hash": txn_hash.hex()})
     except (ValidationError, TimeExhausted) as e:
         return jsonify({"error": str(e)}), 400
 
-# Modify other API endpoint functions in the same way
-...
+
 
 @click.group()
 def cli():

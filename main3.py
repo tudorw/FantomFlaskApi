@@ -38,9 +38,13 @@ def deploy_route():
     private_key = request.json["private_key"]
     return deploy(private_key)
 
+
 @click.command("deploy")
-@click.argument("private_key")
-def deploy(private_key):
+def deploy():
+    private_key = click.prompt("Please enter your private key", type=str)
+    deploy_impl(private_key)
+
+def deploy_impl(private_key):
     try:
             private_key = request.json["private_key"]
 
@@ -92,9 +96,14 @@ def write_data_route():
 
 @click.command("write")
 @click.argument("contract_address")
-@click.argument("private_key")
-@click.argument("function_args", nargs=-1)
-def write_data(contract_address, private_key, function_args):
+def write_data(contract_address):
+    private_key = click.prompt("Please enter your private key", type=str)
+    function_args_str = click.prompt("Please enter function arguments as a comma-separated list", type=str)
+    function_args = [arg.strip() for arg in function_args_str.split(',')]
+    write_data_impl(contract_address, private_key, function_args)
+
+def write_data_impl(contract_address, private_key, function_args):
+
     try:
           contract_address = request.json["contract_address"]
     private_key = request.json["private_key"]
@@ -160,9 +169,12 @@ def send_raw_transaction_route():
     return send_raw_transaction(private_key, raw_transaction)
 
 @click.command("send_raw_transaction")
-@click.argument("private_key")
-@click.argument("raw_transaction")
-def send_raw_transaction(private_key, raw_transaction):
+def send_raw_transaction():
+    private_key = click.prompt("Please enter your private key", type=str)
+    raw_transaction = click.prompt("Please enter the raw transaction", type=str)
+    send_raw_transaction_impl(private_key, raw_transaction)
+
+def send_raw_transaction_impl(private_key, raw_transaction):
     try:
         private_key = request.json["private_key"]
         raw_transaction = request.json["raw_transaction"]
